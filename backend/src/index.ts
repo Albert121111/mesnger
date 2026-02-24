@@ -50,4 +50,4 @@ app.use('/calls', callRoutes);
 app.get('/auth/me', authRequired, async (req, res) => res.json(await prisma.user.findUnique({ where: { id: req.userId } })));
 app.get('/health', (_req, res) => res.status(200).json({ ok: true }));
 
-httpServer.listen(env.port, () => console.log(`Backend on port ${env.port} (host bind: all interfaces)`));
+httpServer.listen(env.port, env.host, () => console.log(`Backend on http://${env.host}:${env.port}`));
