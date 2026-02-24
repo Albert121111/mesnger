@@ -22,6 +22,7 @@ npm run dev
 
 Проверка:
 - http://localhost:4000/health
+- `npm run db:prepare` автоматически использует `prisma migrate deploy`, а если миграций ещё нет — fallback на `prisma db push` (чтобы backend не падал при первом запуске).
 - http://localhost:3000
 - Логин demo-пользователем: `demo1@mail.dev` / `Test12345!`
 

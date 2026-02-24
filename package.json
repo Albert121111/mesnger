@@ -10,7 +10,7 @@
     "build": "npm run build -w backend && npm run build -w frontend",
     "seed": "npm run seed -w backend",
     "setup": "npm install && npm run db:prepare",
-    "db:prepare": "npm run prisma:generate -w backend && npx prisma migrate deploy --schema backend/prisma/schema.prisma && npm run seed",
+    "db:prepare": "npm run db:prepare -w backend && npm run seed",
     "reset-db": "npx prisma migrate reset --force --skip-generate --schema backend/prisma/schema.prisma && npm run seed",
     "lint": "npm run lint -w frontend || true",
     "test": "echo \"No automated tests yet\"",
