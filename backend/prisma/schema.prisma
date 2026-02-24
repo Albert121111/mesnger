@@ -1,0 +1,219 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ChatType {
+  DIRECT
+  GROUP
+}
+enum ParticipantRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  VOICE
+  SYSTEM
+  CALL_EVENT
+}
+enum AttachmentKind {
+  IMAGE
+  FILE
+  VOICE
+}
+enum CallType {
+  AUDIO
+  VIDEO
+}
+enum CallStatus {
+  MISSED
+  DECLINED
+  ENDED
+  FAILED
+  ONGOING
+}
+enum ThemeMode {
+  LIGHT
+  DARK
+  SYSTEM
+}
+enum Language {
+  RU
+  EN
+}
+enum OnlineVisibility {
+  EVERYONE
+  NOBODY
+}
+enum WhoCanCall {
+  EVERYONE
+  CONTACTS
+  NOBODY
+}
+
+model User {
+  id                      String   @id @default(uuid())
+  email                   String   @unique
+  passwordHash            String
+  username                String   @unique
+  displayName             String
+  bio                     String?
+  avatarUrl               String?
+  phone                   String?
+  isOnline                Boolean  @default(false)
+  lastSeenAt              DateTime?
+  isSearchableByUsername  Boolean  @default(true)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  sessions                Session[]
+  participants            ChatParticipant[]
+  sentMessages            Message[] @relation("SentMessages")
+  settings                UserSettings?
+
+  @@index([displayName])
+}
+
+model Session {
+  id         String   @id @default(uuid())
+  userId     String
+  tokenHash  String
+  userAgent  String?
+  ipAddress  String?
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  revokedAt  DateTime?
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Chat {
+  id            String @id @default(uuid())
+  type          ChatType
+  title         String?
+  avatarUrl     String?
+  createdById   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lastMessageAt DateTime @default(now())
+  participants  ChatParticipant[]
+  messages      Message[]
+  calls         Call[]
+}
+
+model ChatParticipant {
+  id                String @id @default(uuid())
+  chatId             String
+  userId             String
+  role               ParticipantRole @default(MEMBER)
+  joinedAt           DateTime @default(now())
+  mutedUntil         DateTime?
+  isArchived         Boolean @default(false)
+  lastReadMessageId  String?
+
+  chat              Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user              User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([chatId, userId])
+}
+
+model Message {
+  id                       String @id @default(uuid())
+  chatId                    String
+  senderId                  String
+  type                      MessageType @default(TEXT)
+  text                      String?
+  replyToMessageId          String?
+  forwardedFromMessageId    String?
+  isEdited                  Boolean @default(false)
+  editedAt                  DateTime?
+  deletedForEveryoneAt      DateTime?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  chat                      Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender                    User @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  attachments               Attachment[]
+  deletionsForUsers         MessageDeletionForUser[]
+  editHistory               MessageEditHistory[]
+
+  @@index([chatId, createdAt])
+}
+
+model MessageEditHistory {
+  id            String @id @default(uuid())
+  messageId     String
+  previousText  String
+  newText       String
+  editedByUserId String
+  createdAt     DateTime @default(now())
+
+  message       Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+}
+
+model MessageDeletionForUser {
+  id         String @id @default(uuid())
+  messageId   String
+  userId      String
+  deletedAt   DateTime @default(now())
+
+  message     Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+}
+
+model Attachment {
+  id           String @id @default(uuid())
+  messageId     String
+  kind          AttachmentKind
+  url           String
+  fileName      String
+  mimeType      String
+  fileSize      Int
+  width         Int?
+  height        Int?
+  durationSec   Int?
+  waveformJson  String?
+  createdAt     DateTime @default(now())
+
+  message       Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+}
+
+model Call {
+  id          String @id @default(uuid())
+  chatId       String
+  initiatorId  String
+  recipientId  String
+  type         CallType
+  status       CallStatus @default(ONGOING)
+  startedAt    DateTime?
+  endedAt      DateTime?
+  durationSec  Int?
+  createdAt    DateTime @default(now())
+
+  chat         Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+}
+
+model UserSettings {
+  id                                  String @id @default(uuid())
+  userId                               String @unique
+  theme                                ThemeMode @default(LIGHT)
+  language                             Language @default(RU)
+  enterToSend                          Boolean @default(true)
+  notificationEnabled                  Boolean @default(true)
+  notificationSoundEnabled             Boolean @default(true)
+  showMessagePreviewInNotification     Boolean @default(true)
+  whoCanSeeOnlineStatus                OnlineVisibility @default(EVERYONE)
+  whoCanCall                           WhoCanCall @default(EVERYONE)
+  createdAt                            DateTime @default(now())
+  updatedAt                            DateTime @updatedAt
+
+  user                                 User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

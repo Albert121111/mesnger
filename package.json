@@ -1,0 +1,55 @@
+{
+  "name": "mesnger",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w backend\" \"npm run dev -w frontend\"",
+    "build": "npm run build -w backend && npm run build -w frontend",
+    "seed": "npm run seed -w backend",
+    "setup": "npm install --include=dev && npm run db:prepare",
+    "db:prepare": "npm run db:prepare -w backend && npm run seed",
+    "reset-db": "npx prisma migrate reset --force --skip-generate --schema backend/prisma/schema.prisma && npm run seed",
+    "lint": "npm run lint -w frontend || true",
+    "test": "echo \"No automated tests yet\"",
+    "start": "npm run build && npm run start -w backend & npm run start -w frontend",
+    "desktop:backend:start": "npm run prisma:generate:sqlite -w backend && npm run prisma:push:sqlite -w backend && npm run seed:sqlite -w backend && node backend/dist/desktop-index.js",
+    "desktop:frontend:dev": "npm run dev -w frontend",
+    "desktop:frontend:build": "npm run build -w frontend",
+    "desktop:frontend:start": "npm run start -w frontend",
+    "dev:desktop": "npm run ensure:deps && electron desktop/main.js --dev",
+    "build:desktop": "npm run ensure:deps && npm run build -w backend && npm run desktop:frontend:build && electron-builder -w --x64 --publish never",
+    "postinstall": "npm run prisma:generate -w backend || true",
+    "predev": "npm run prisma:generate -w backend",
+    "dev:backend": "npm run prisma:generate -w backend && npm run dev -w backend",
+    "ensure:deps": "node scripts/ensure-deps.cjs"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "electron": "^33.3.2",
+    "electron-builder": "^25.1.8",
+    "cross-env": "^7.0.3"
+  },
+  "build": {
+    "appId": "com.mesnger.desktop",
+    "productName": "Mesnger Desktop",
+    "directories": {
+      "output": "dist-desktop"
+    },
+    "files": [
+      "desktop/**/*",
+      "backend/dist/**/*",
+      "frontend/.next/**/*",
+      "frontend/public/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    }
+  }
+}
