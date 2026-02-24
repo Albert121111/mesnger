@@ -15,7 +15,8 @@
     "prisma:push:sqlite": "prisma db push --schema prisma/schema.sqlite.prisma",
     "seed:sqlite": "tsx prisma/seed-sqlite.ts",
     "predev": "npm run prisma:generate",
-    "db:prepare": "sh ./scripts/db-prepare.sh"
+    "db:prepare": "sh ./scripts/db-prepare.sh",
+    "typecheck:seed": "tsc -p tsconfig.seed.json --noEmit"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

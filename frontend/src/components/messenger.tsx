@@ -1,5 +1,5 @@
 'use client';
-import { api } from '@/lib/api';
+import { api, getApiBaseUrl } from '@/lib/api';
 import { useAppStore } from '@/store/app';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Phone, Send, Settings, Video } from 'lucide-react';

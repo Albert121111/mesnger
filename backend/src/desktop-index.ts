@@ -7,16 +7,29 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import { PrismaClient } from '../generated/sqlite-client';
 
 const prisma = new PrismaClient();
 const app = express();
 const httpServer = createServer(app);
-const io = new Server(httpServer, { cors: { origin: '*' } });
+const io = new Server(httpServer, { cors: { origin: true, credentials: true } });
 const port = Number(process.env.DESKTOP_BACKEND_PORT || 4010);
+const host = process.env.DESKTOP_BACKEND_HOST || '0.0.0.0';
 const secret = process.env.JWT_ACCESS_SECRET || 'desktop_secret';
 const uploadDir = process.env.UPLOAD_DIR || path.resolve(process.cwd(), 'desktop-data/uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+const getIps = () => {
+  const nets = os.networkInterfaces();
+  const list: string[] = [];
+  for (const values of Object.values(nets)) {
+    for (const entry of values || []) {
+      if (entry.family === 'IPv4' && !entry.internal) list.push(entry.address);
+    }
+  }
+  return [...new Set(list)];
+};
 
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
@@ -26,27 +39,45 @@ app.use('/uploads', express.static(uploadDir));
 const auth = (req: any, res: any, next: any) => {
   const token = req.cookies.accessToken || req.headers.authorization?.replace('Bearer ', '');
   if (!token) return res.status(401).json({ message: 'Unauthorized' });
-  try { req.userId = (jwt.verify(token, secret) as any).userId; next(); } catch { return res.status(401).json({ message: 'Unauthorized' }); }
+  try {
+    req.userId = (jwt.verify(token, secret) as any).userId;
+    next();
+  } catch {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
 };
 
 app.post('/auth/register', async (req, res) => {
-  const u = await prisma.user.create({ data: { email: req.body.email, username: req.body.username.replace('@','').toLowerCase(), displayName: req.body.displayName, passwordHash: await bcrypt.hash(req.body.password, 10) } });
-  const token = jwt.sign({ userId: u.id }, secret, { expiresIn: '7d' });
-  res.cookie('accessToken', token, { httpOnly: true, sameSite: 'lax' });
-  res.json({ user: u });
+  try {
+    const u = await prisma.user.create({
+      data: {
+        email: req.body.email,
+        username: req.body.username.replace('@', '').toLowerCase(),
+        displayName: req.body.displayName,
+        passwordHash: await bcrypt.hash(req.body.password, 10)
+      }
+    });
+    const token = jwt.sign({ userId: u.id }, secret, { expiresIn: '7d' });
+    res.cookie('accessToken', token, { httpOnly: true, sameSite: 'lax' });
+    res.json({ user: u });
+  } catch {
+    res.status(409).json({ message: 'Пользователь уже существует' });
+  }
 });
+
 app.post('/auth/login', async (req, res) => {
-  const login = req.body.login.replace('@','').toLowerCase();
+  const login = String(req.body.login || '').replace('@', '').toLowerCase();
   const u = await prisma.user.findFirst({ where: { OR: [{ email: login }, { username: login }] } });
-  if (!u || !(await bcrypt.compare(req.body.password, u.passwordHash))) return res.status(401).json({ message: 'Invalid credentials' });
+  if (!u || !(await bcrypt.compare(req.body.password, u.passwordHash))) return res.status(401).json({ message: 'Неверный логин или пароль' });
   const token = jwt.sign({ userId: u.id }, secret, { expiresIn: '7d' });
   res.cookie('accessToken', token, { httpOnly: true, sameSite: 'lax' });
   res.json({ user: u });
 });
+
 app.get('/auth/me', auth, async (req: any, res) => res.json(await prisma.user.findUnique({ where: { id: req.userId } })));
 app.get('/users/me', auth, async (req: any, res) => res.json(await prisma.user.findUnique({ where: { id: req.userId } })));
 app.get('/users/search', auth, async (req: any, res) => {
-  const q = String(req.query.q || '').replace('@','').toLowerCase();
+  const q = String(req.query.q || '').replace('@', '').toLowerCase();
   const users = await prisma.user.findMany({ where: { username: { contains: q }, id: { not: req.userId } }, take: 20 });
   res.json(users);
 });
@@ -68,14 +99,30 @@ app.post('/messages', auth, async (req: any, res) => {
   io.to(req.body.chatId).emit('message:new', m);
   res.json(m);
 });
-app.get('/health', (_req, res) => res.json({ ok: true, mode: 'desktop' }));
+
+app.get('/health', (_req, res) => res.status(200).json({ ok: true, mode: 'desktop' }));
+app.get('/host-info', (_req, res) => res.json({ ok: true, host, port, ips: getIps(), url: `http://127.0.0.1:${port}` }));
 
 io.on('connection', (s) => {
-  s.on('auth:join-user-room', async ({ userId }) => {
+  s.on('auth:join-user-room', async (payload: any = {}) => {
+    let userId = payload.userId as string | undefined;
+    if (!userId) {
+      const token = (s.handshake.auth as any)?.token;
+      if (token) {
+        try {
+          userId = (jwt.verify(token, secret) as any).userId;
+        } catch {
+          userId = undefined;
+        }
+      }
+    }
+    if (!userId) return;
     const parts = await prisma.chatParticipant.findMany({ where: { userId }, select: { chatId: true } });
     parts.forEach((p) => s.join(p.chatId));
   });
-  ['call:invite','call:accept','call:end','webrtc:offer','webrtc:answer','webrtc:ice-candidate'].forEach((event) => s.on(event, (payload) => s.broadcast.emit(event, payload)));
+  ['call:invite', 'call:accept', 'call:end', 'webrtc:offer', 'webrtc:answer', 'webrtc:ice-candidate'].forEach((event) =>
+    s.on(event, (payload) => s.broadcast.emit(event, payload))
+  );
 });
 
-httpServer.listen(port, () => console.log('Desktop backend on', port));
+httpServer.listen(port, host, () => console.log(`Desktop backend listening on http://${host}:${port}`));
