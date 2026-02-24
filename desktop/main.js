@@ -7,7 +7,7 @@ let mainWindow;
 let backendProc;
 let frontendProc;
 
-const isDev = process.env.DESKTOP_DEV === '1';
+const isDev = process.argv.includes('--dev') || process.env.DESKTOP_DEV === '1';
 const backendPort = process.env.DESKTOP_BACKEND_PORT || '4010';
 const frontendPort = process.env.DESKTOP_FRONTEND_PORT || '3001';
 const defaultServerUrl = `http://127.0.0.1:${backendPort}`;

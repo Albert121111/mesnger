@@ -10,7 +10,7 @@
 ## Windows (PowerShell) важно
 1. Перед любыми командами выполните:
 ```powershell
-npm install --include=dev
+npm run ensure:deps
 ```
 2. Далее команды работают из корня проекта:
 ```powershell
