@@ -1,74 +1,50 @@
 # Mesnger MVP+
 
-## Быстрый старт
+## Быстрый старт и проверка
 
-### Web mode (Docker, одной командой)
+### 1) Docker (одной командой)
 ```bash
 docker compose up --build
 ```
-Поднимаются `postgres`, `backend`, `frontend`.
+
+Проверка:
 - Frontend: http://localhost:3000
-- Backend: http://localhost:4000
+- Backend health: http://localhost:4000/health (должен вернуть `{ "ok": true }`)
 
-Что происходит автоматически в backend-контейнере:
-1. ожидание готовности Postgres;
-2. `prisma generate`;
-3. `prisma migrate deploy`;
-4. seed, если база пустая;
-5. запуск API.
-
-## Локальный запуск без Docker
-
-### Первый запуск
+### 2) Локально без Docker
 ```bash
 cp .env.example .env
+cp frontend/.env.example frontend/.env.local
 npm install
 npm run db:prepare
-```
-
-### Запуск dev одной командой
-```bash
 npm run dev
 ```
-Запускает frontend + backend параллельно через `concurrently`.
 
-## Desktop Edition (Windows .exe / installer)
-Отдельный режим с Electron + SQLite.
+Проверка:
+- http://localhost:4000/health
+- http://localhost:3000
+- Логин demo-пользователем: `demo1@mail.dev` / `Test12345!`
 
-### Desktop dev
-```bash
-npm run dev:desktop
-```
-Запускает Electron, локальный backend на SQLite и frontend.
+## Диагностика проблем с backend
+- Проверка портов:
+  - Linux/macOS: `ss -ltnp | grep -E ':3000|:4000'`
+  - Windows PowerShell: `netstat -ano | findstr :4000`
+- Docker:
+  - `docker compose ps`
+  - `docker compose logs backend`
 
-### Desktop build (.exe)
-```bash
-npm run build:desktop
-```
-Результат: `dist-desktop/` (NSIS installer `.exe` и portable `.exe`).
+## Что исправлено для ошибки `Network Error`
+- Backend теперь слушает `0.0.0.0` и доступен с хоста на `http://localhost:4000`.
+- Добавлен/проверен endpoint `GET /health`.
+- FRONTEND API base URL унифицирован через `NEXT_PUBLIC_API_URL=http://localhost:4000`.
+- Улучшена обработка ошибок auth:
+  - backend недоступен,
+  - CORS,
+  - 401,
+  - 409.
+- На login/register добавлен `show/hide password` (глазик).
 
-Desktop ограничения:
-- SQLite профиль покрывает базовые auth/chats/messages/realtime/signaling сценарии.
-- WebRTC 1-на-1 работает в пределах desktop-клиентов, но без TURN по умолчанию.
-
-## Полезные команды
-- `npm run seed`
-- `npm run reset-db`
-- `npm run build`
-- `npm run start`
-- `npm run lint`
-- `npm run test`
-
-## Demo users
-- `demo1@mail.dev` ... `demo10@mail.dev`
-- username: `demo1` ... `demo10`
-- password: `Test12345!`
-
-## Переменные окружения
-См. `.env.example`.
-
-## Структура
-- `backend/` — Express + Prisma + Socket.IO API
-- `frontend/` — Next.js App Router + Tailwind + Zustand + React Query
-- `desktop/` — Electron main/preload и desktop orchestration
-- `docker-compose.yml` — web mode infra
+## Desktop Edition
+- Dev: `npm run dev:desktop`
+- Build Windows: `npm run build:desktop`
+- Output: `dist-desktop/` (NSIS installer + portable exe)
