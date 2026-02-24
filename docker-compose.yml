@@ -7,6 +7,16 @@ services:
       POSTGRES_PASSWORD: postgres
     ports: ["5432:5432"]
     volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d mesnger"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   backend:
     build:
       context: .
@@ -17,16 +27,36 @@ services:
       JWT_REFRESH_SECRET: refresh_secret_change
       FRONTEND_URL: http://localhost:3000
       BACKEND_PORT: 4000
-    depends_on: [postgres]
+      UPLOAD_DIR: uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports: ["4000:4000"]
     volumes: ["./backend/uploads:/app/backend/uploads"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   frontend:
     build:
       context: .
       dockerfile: frontend/Dockerfile
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:4000
-    depends_on: [backend]
+    depends_on:
+      backend:
+        condition: service_healthy
     ports: ["3000:3000"]
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 volumes:
   pgdata:

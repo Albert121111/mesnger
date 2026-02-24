@@ -1,13 +1,50 @@
 {
   "name": "mesnger",
   "private": true,
-  "workspaces": ["backend", "frontend"],
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
   "scripts": {
     "dev": "concurrently \"npm run dev -w backend\" \"npm run dev -w frontend\"",
     "build": "npm run build -w backend && npm run build -w frontend",
-    "seed": "npm run seed -w backend"
+    "seed": "npm run seed -w backend",
+    "setup": "npm install && npm run db:prepare",
+    "db:prepare": "npm run prisma:generate -w backend && npx prisma migrate deploy --schema backend/prisma/schema.prisma && npm run seed",
+    "reset-db": "npx prisma migrate reset --force --skip-generate --schema backend/prisma/schema.prisma && npm run seed",
+    "lint": "npm run lint -w frontend || true",
+    "test": "echo \"No automated tests yet\"",
+    "start": "npm run build && npm run start -w backend & npm run start -w frontend",
+    "desktop:backend:start": "npm run prisma:generate:sqlite -w backend && npm run prisma:push:sqlite -w backend && npm run seed:sqlite -w backend && node backend/dist/desktop-index.js",
+    "desktop:frontend:dev": "npm run dev -w frontend",
+    "desktop:frontend:build": "npm run build -w frontend",
+    "desktop:frontend:start": "npm run start -w frontend",
+    "dev:desktop": "DESKTOP_DEV=1 electron desktop/main.js",
+    "build:desktop": "npm run build -w backend && npm run desktop:frontend:build && electron-builder -w --x64 --publish never"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "electron": "^33.3.2",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.mesnger.desktop",
+    "productName": "Mesnger Desktop",
+    "directories": {
+      "output": "dist-desktop"
+    },
+    "files": [
+      "desktop/**/*",
+      "backend/dist/**/*",
+      "frontend/.next/**/*",
+      "frontend/public/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    }
   }
 }

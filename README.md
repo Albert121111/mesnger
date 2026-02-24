@@ -1,41 +1,74 @@
 # Mesnger MVP+
 
-## Структура
-- `backend/` — Express + Prisma + Socket.IO API
-- `frontend/` — Next.js App Router + Tailwind + Zustand + React Query
-- `docker-compose.yml` — frontend/backend/postgres
+## Быстрый старт
 
-## Реализовано
-- Auth: register/login/refresh/logout/me.
-- PostgreSQL Prisma schema: users/chats/messages/attachments/calls/settings/sessions.
-- Chat list, open/close active chat, message feed.
-- Message send/edit/undo-edit/delete-for-me/delete-for-everyone/forward/reply id support.
-- Upload image/file + voice blob endpoint.
-- Username search with `@` support and direct chat upsert.
-- Presence/typing/message realtime via Socket.IO.
-- WebRTC 1:1 audio/video signaling via socket events.
-- Profile/settings data model and APIs (`users/me`, `PATCH users/me`).
-- Seed users/chats/messages/calls and demo credentials.
+### Web mode (Docker, одной командой)
+```bash
+docker compose up --build
+```
+Поднимаются `postgres`, `backend`, `frontend`.
+- Frontend: http://localhost:3000
+- Backend: http://localhost:4000
+
+Что происходит автоматически в backend-контейнере:
+1. ожидание готовности Postgres;
+2. `prisma generate`;
+3. `prisma migrate deploy`;
+4. seed, если база пустая;
+5. запуск API.
+
+## Локальный запуск без Docker
+
+### Первый запуск
+```bash
+cp .env.example .env
+npm install
+npm run db:prepare
+```
+
+### Запуск dev одной командой
+```bash
+npm run dev
+```
+Запускает frontend + backend параллельно через `concurrently`.
+
+## Desktop Edition (Windows .exe / installer)
+Отдельный режим с Electron + SQLite.
+
+### Desktop dev
+```bash
+npm run dev:desktop
+```
+Запускает Electron, локальный backend на SQLite и frontend.
+
+### Desktop build (.exe)
+```bash
+npm run build:desktop
+```
+Результат: `dist-desktop/` (NSIS installer `.exe` и portable `.exe`).
+
+Desktop ограничения:
+- SQLite профиль покрывает базовые auth/chats/messages/realtime/signaling сценарии.
+- WebRTC 1-на-1 работает в пределах desktop-клиентов, но без TURN по умолчанию.
+
+## Полезные команды
+- `npm run seed`
+- `npm run reset-db`
+- `npm run build`
+- `npm run start`
+- `npm run lint`
+- `npm run test`
 
 ## Demo users
 - `demo1@mail.dev` ... `demo10@mail.dev`
 - username: `demo1` ... `demo10`
 - password: `Test12345!`
 
-## Локальный запуск
-1. `cp .env.example .env`
-2. `npm install`
-3. `npm run prisma:generate -w backend`
-4. `npx prisma migrate dev --schema backend/prisma/schema.prisma --name init`
-5. `npm run seed`
-6. `npm run dev`
-7. Open `http://localhost:3000`
+## Переменные окружения
+См. `.env.example`.
 
-## Docker
-1. `docker compose up --build`
-2. in another shell run migrations+seed inside backend container.
-
-## Упрощения
-- UI закрывает большинство требований MVP, но без полного набора модальных экранов/иконографики и без wavesurfer.
-- TURN server задаётся env, по умолчанию STUN-only.
-- Undo edit хранит последнюю версию и доступен API, без серверного hard cutoff окна.
+## Структура
+- `backend/` — Express + Prisma + Socket.IO API
+- `frontend/` — Next.js App Router + Tailwind + Zustand + React Query
+- `desktop/` — Electron main/preload и desktop orchestration
+- `docker-compose.yml` — web mode infra

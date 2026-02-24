@@ -7,4 +7,4 @@ COPY . .
 WORKDIR /app/backend
 RUN npx prisma generate && npm run build
 EXPOSE 4000
-CMD ["npm","run","start"]
+CMD ["sh","./scripts/start-with-migrate.sh"]
