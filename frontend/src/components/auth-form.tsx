@@ -25,9 +25,12 @@ export default function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   const [desktopMode, setDesktopMode] = useState<'host' | 'client'>('host');
   const [serverUrl, setServerUrl] = useState('http://127.0.0.1:4010');
   const [hostInfo, setHostInfo] = useState<any>(null);
+  const [isDesktop, setIsDesktop] = useState(false);
   const router = useRouter();
 
-  const isDesktop = typeof window !== 'undefined' && !!window.desktop;
+  useEffect(() => {
+    setIsDesktop(typeof window !== 'undefined' && !!window.desktop);
+  }, []);
 
   useEffect(() => {
     if (!isDesktop) return;

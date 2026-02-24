@@ -8,7 +8,7 @@ import jwt from 'jsonwebtoken';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
-import { PrismaClient } from '../generated/sqlite-client';
+const { PrismaClient } = require('../generated/sqlite-client') as { PrismaClient: new () => any };
 
 const prisma = new PrismaClient();
 const app = express();
@@ -83,12 +83,12 @@ app.get('/users/search', auth, async (req: any, res) => {
 });
 app.get('/chats', auth, async (req: any, res) => {
   const cps = await prisma.chatParticipant.findMany({ where: { userId: req.userId }, include: { chat: { include: { participants: { include: { user: true } } } } } });
-  res.json(cps.map((c) => c.chat));
+  res.json(cps.map((c: any) => c.chat));
 });
 app.post('/chats/direct', auth, async (req: any, res) => {
   const peerId = req.body.userId;
   const mine = await prisma.chatParticipant.findMany({ where: { userId: req.userId }, select: { chatId: true } });
-  const existing = await prisma.chatParticipant.findFirst({ where: { userId: peerId, chatId: { in: mine.map((m) => m.chatId) } } });
+  const existing = await prisma.chatParticipant.findFirst({ where: { userId: peerId, chatId: { in: mine.map((m: any) => m.chatId) } } });
   if (existing) return res.json(await prisma.chat.findUnique({ where: { id: existing.chatId }, include: { participants: { include: { user: true } } } }));
   const chat = await prisma.chat.create({ data: { participants: { create: [{ userId: req.userId }, { userId: peerId }] } }, include: { participants: { include: { user: true } } } });
   res.json(chat);
@@ -118,7 +118,7 @@ io.on('connection', (s) => {
     }
     if (!userId) return;
     const parts = await prisma.chatParticipant.findMany({ where: { userId }, select: { chatId: true } });
-    parts.forEach((p) => s.join(p.chatId));
+    parts.forEach((p: any) => s.join(p.chatId));
   });
   ['call:invite', 'call:accept', 'call:end', 'webrtc:offer', 'webrtc:answer', 'webrtc:ice-candidate'].forEach((event) =>
     s.on(event, (payload) => s.broadcast.emit(event, payload))

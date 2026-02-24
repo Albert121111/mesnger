@@ -26,7 +26,7 @@ const isAllowedOrigin = (origin?: string) => {
 };
 
 const corsDelegate: cors.CorsOptionsDelegate = (req, callback) => {
-  const origin = req.header('Origin');
+  const origin = req.headers.origin;
   callback(null, {
     origin: isAllowedOrigin(origin),
     credentials: true
