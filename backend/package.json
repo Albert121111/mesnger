@@ -3,17 +3,18 @@
   "version": "1.0.0",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "npm run prisma:generate && tsx watch src/index.ts",
+    "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
-    "prisma:generate": "prisma generate",
+    "prisma:generate": "prisma generate --schema prisma/schema.prisma",
     "prisma:migrate": "prisma migrate dev --name init",
     "seed": "tsx prisma/seed.ts",
     "dev:desktop": "npm run prisma:generate:sqlite && tsx watch src/desktop-index.ts",
     "build:desktop": "tsc -p tsconfig.json",
     "prisma:generate:sqlite": "prisma generate --schema prisma/schema.sqlite.prisma",
     "prisma:push:sqlite": "prisma db push --schema prisma/schema.sqlite.prisma",
-    "seed:sqlite": "tsx prisma/seed-sqlite.ts"
+    "seed:sqlite": "tsx prisma/seed-sqlite.ts",
+    "predev": "npm run prisma:generate"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

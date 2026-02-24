@@ -25,6 +25,16 @@ npm run dev
 - http://localhost:3000
 - Логин demo-пользователем: `demo1@mail.dev` / `Test12345!`
 
+
+### Если backend падает с Prisma ошибкой
+Ошибка вида `@prisma/client did not initialize yet` означает, что клиент Prisma не сгенерирован.
+Выполните:
+```bash
+npm run prisma:generate -w backend
+npm run dev
+```
+(или просто `npm install`, postinstall тоже запускает генерацию Prisma).
+
 ## Диагностика Network Error
 1. Проверить порты:
    - Linux/macOS: `ss -ltnp | grep -E ':3000|:4000'`
