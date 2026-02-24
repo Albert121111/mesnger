@@ -7,6 +7,17 @@
 
 ## Команды одной строкой
 
+## Windows (PowerShell) важно
+1. Перед любыми командами выполните:
+```powershell
+npm install --include=dev
+```
+2. Далее команды работают из корня проекта:
+```powershell
+npm run build:desktop
+npm run dev:desktop
+```
+
 ### Desktop dev
 ```bash
 npm run dev:desktop

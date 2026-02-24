@@ -9,7 +9,7 @@
     "dev": "concurrently \"npm run dev -w backend\" \"npm run dev -w frontend\"",
     "build": "npm run build -w backend && npm run build -w frontend",
     "seed": "npm run seed -w backend",
-    "setup": "npm install && npm run db:prepare",
+    "setup": "npm install --include=dev && npm run db:prepare",
     "db:prepare": "npm run db:prepare -w backend && npm run seed",
     "reset-db": "npx prisma migrate reset --force --skip-generate --schema backend/prisma/schema.prisma && npm run seed",
     "lint": "npm run lint -w frontend || true",
@@ -19,7 +19,7 @@
     "desktop:frontend:dev": "npm run dev -w frontend",
     "desktop:frontend:build": "npm run build -w frontend",
     "desktop:frontend:start": "npm run start -w frontend",
-    "dev:desktop": "DESKTOP_DEV=1 electron desktop/main.js",
+    "dev:desktop": "cross-env DESKTOP_DEV=1 electron desktop/main.js",
     "build:desktop": "npm run build -w backend && npm run desktop:frontend:build && electron-builder -w --x64 --publish never",
     "postinstall": "npm run prisma:generate -w backend || true",
     "predev": "npm run prisma:generate -w backend",
@@ -28,7 +28,8 @@
   "devDependencies": {
     "concurrently": "^9.1.2",
     "electron": "^33.3.2",
-    "electron-builder": "^25.1.8"
+    "electron-builder": "^25.1.8",
+    "cross-env": "^7.0.3"
   },
   "build": {
     "appId": "com.mesnger.desktop",
